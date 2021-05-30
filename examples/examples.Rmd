@@ -1,0 +1,141 @@
+---
+title: "Variable Selection with CRT and Selective SeqStep+ Examples"
+output:
+  html_document:
+    df_print: paged
+---
+
+We demonstrate the usage of the functions here. 
+```{r echo=T, results='hide'}
+source("CRT_seqstep/seqstep_CRT_functions.R")
+```
+
+### Generate Data
+We start by generating a small dataset. 
+```{r}
+set.seed(2021)
+n = 100 ## number of observations
+p = 50 ## number of variables
+k = 20 ## number of nonnulls
+amplitude = 10
+rho = 0.5
+
+##generate X from a gaussian distribution and generate Y from a linear model
+nonnulls = sample(1:p,k)
+beta = rep(amplitude,k)/sqrt(n)
+y_model = function(X){
+    y = X %*% beta
+}
+Sigma = toeplitz(rho^(0:(p-1)))
+X = matrix(rnorm(n*p),n) %*% chol(Sigma)
+y = y_model(X[,nonnulls]) + rnorm(n) 
+```
+
+### Run the procedures
+We run the variable selection procedures with CRT and Selective SeqStep+ (exact version and inexact version), and knockoffs as a comparison.
+```{r echo=T, results='hide'}
+selected_sets = selected_set(X, y, X_model = "AR", rho = 0.5, Sigma = Sigma, model = "linear", blackbox = "lasso", c = 0.1, include_h = FALSE, knockoff_pluss = 1)
+```
+We find the FDP and power of the procedures.
+```{r}
+##find fdps and powers
+fdp = function(selected, nonnulls) length(setdiff(selected, nonnulls)) / max(1, length(selected))
+power = function(selected, nonnulls) length(intersect(selected, nonnulls)) / length(nonnulls)
+fdps = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, fdp))
+powers = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, power))
+
+results = data.frame(fdp = fdps, power= powers, method = selected_sets$method)
+results
+```
+
+### Change the blackbox to compute importance statistics
+One can also run the procedures with a different blackbox, e.g., gradient boosting.
+```{r echo=T, results='hide'}
+selected_sets = selected_set(X, y, X_model = "AR", rho = 0.5, Sigma = Sigma, model = "linear", blackbox = "gb", c = 0.1, include_h = FALSE, knockoff_pluss = 1)
+```
+Again, we find the FDP and power of the procedures.
+```{r}
+fdps = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, fdp))
+powers = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, power))
+results = data.frame(fdp = fdps, power= powers, method = selected_sets$method)
+results
+```
+
+### Binary data
+
+We generate a small dataset where $y$ is binary. 
+```{r}
+amplitude = 40
+rho = 0.5
+
+##generate X from a gaussian distribution and generate Y from a linear model
+nonnulls = sample(1:p,k)
+beta = rep(amplitude,k)/sqrt(n)
+Sigma = toeplitz(rho^(0:(p-1)))
+X = matrix(rnorm(n*p),n) %*% chol(Sigma)
+y_model = function(X){
+                y = X %*% beta
+            }
+z = y_model(X[,nonnulls])
+pr = 1/(1+exp(-z))         # pass through an inv-logit function
+y = (runif(n)<pr) + 0
+```
+
+Then we run our procedures and find FDP and power. 
+```{r echo=T, results='hide'}
+selected_sets = selected_set(X, y, X_model = "AR", rho = 0.5, Sigma = Sigma, model = "logistic", blackbox = "lasso", c = 0.1, include_h = FALSE, knockoff_pluss = 1)
+```
+
+```{r}
+fdps = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, fdp))
+powers = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, power))
+results = data.frame(fdp = fdps, power= powers, method = selected_sets$method)
+results
+```
+
+
+### HMM model
+The code also works for the case where $X$ is sampled from an HMM
+```{r}
+amplitude = 50
+
+## Define an HMM 
+K=5  # Number of possible states for each variable
+M=3  # Number of possible emission states for each variable
+States = 1:K
+Symbols = 1:M
+startProbs = rep(1,K)/K
+rho = 0.5
+transProbs = (1-rho)*matrix(rep(1/K,(K^2)), ncol = K) + rho*diag(rep(1,K))
+rho2 = 0.5
+Diag_g = matrix(c(rep(c(1,0.5,rep(0,(K*M-1)/(M-1)-3),0.5),M-1), 1), ncol = M)
+emissionProbs = (1-rho2)*matrix(rep(1/M,(K*M)), ncol = M) + rho2*Diag_g
+hmm1 = initHMM(States, Symbols, startProbs, transProbs, emissionProbs)
+
+##generate random samples
+nonnulls = sample(1:p,k)
+beta = rep(amplitude,k)/sqrt(n)
+y_model = function(X){
+    y = (X-2) %*% beta
+}
+Sigma = toeplitz(rho^(0:(p-1)))
+X = matrix(rep(0,n*p), nrow = n)
+for (i in 1:n){
+    X[i,] = simHMM(hmm1, length = p)$observation
+}
+z = y_model(X[,nonnulls]) + rnorm(n) 
+pr = 1/(1+exp(-z))         # pass through an inv-logit function
+y = (runif(n)<pr) + 0
+```
+
+Again we run our procedures and find FDP and power. 
+```{r echo=T, results='hide'}
+selected_sets = selected_set(X, y, X_model = "HMM", hmm = hmm1, model = "logistic", blackbox = "lasso", c = 0.1, include_h = FALSE, knockoff_pluss = 1)
+```
+
+```{r}
+fdps = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, fdp))
+powers = unlist(lapply(selected_sets$selected_list, nonnulls = nonnulls, power))
+results = data.frame(fdp = fdps, power= powers, method = selected_sets$method)
+results
+```
