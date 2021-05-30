@@ -307,8 +307,8 @@ CRT_seqstep_HMM = function(X, y, hmm1, B, blackbox, model, one_shot = TRUE){
 ##    y: vector of response variable
 ##    cs: the threshold c in Selective SeqStep+
 ##    one_shot: whether to run the "one shot" CRT
-##    include_hs: TRUE stands for SeqStep+; FALSE stands for SeqStep
-##    knockoff_pluss: 1 stands for Knockoffs+; 0 stands for Knockoffs
+##    include_hs: whether to use additional information in p-values, default is FALSE
+##    knockoff_pluss: 1 stands for Knockoffs+/SeqStep+; 0 stands for Knockoffs/SeqStep
 ##    blackbox: "lasso" is glmnet; "rf" is random forest; "gb" is gradient boosting
 ##    model: "logistic" when y is binary; "gaussian" when y is continuous
 ##    B: number of randomizations in CRT
