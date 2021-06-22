@@ -1,13 +1,18 @@
+library(tidyverse)
+
+plot_FDR = T
+plot_power = T
+plot_band = F
 setting0 = c(1,2,3,4)
-x_model = "hmm" #ar or hmm
+x_model = "ar" #ar or hmm
 
 #knockoff_plus0 = 1
 include_h0 = FALSE
 c0 = 0.1
-N = 2000
-NN = 5
-NNN = 500
 
+#########################################
+############ Can change this ############
+#########################################
 upper_quan = function(x){
   return (mean(x) + qnorm(0.95)*sd(x)/sqrt(NNN))
   #return (mean(x))
@@ -17,21 +22,24 @@ lower_quan = function(x){
   #return (mean(x))
 }
 
-m = 9
-M = 9*N*NN
-results = data.frame(fdp = rep(0,M), power = rep(1,M),
-                     include_h = rep(FALSE,M), c = rep(0.1,M), 
-                     knockoff_plus = rep(1,M), method = rep("knockoffs",M),       
-                     blackbox = rep("lasso",M), amp =rep(5,M),        
-                     setting_no = rep(1,M))
+results = data.frame(fdp = numeric(0), power = numeric(0),
+                     include_h = logical(0), c = character(0), 
+                     knockoff_plus = numeric(0), method = character(0),       
+                     blackbox = character(0), time = numeric(0),
+                     one_shot = logical(0), amp =numeric(0),        
+                     setting_no = integer(0) 
+                     )
 results[,6] = as.character(results[,6])
 results[,7] = as.character(results[,7])
 
-for (arg in 1:N){
-    print(arg)
-    for (iii in 1:NN){
-        filename = sprintf("output_%s/output_%i_%i.Rdata",x_model, arg, iii)
 
+for (amp1 in 1:5){
+  print(amp1)
+    for (setting1 in 1:4){
+      print(setting1)
+      for (seed1 in 1:100){
+        filename = sprintf("output_%s/output_amp%i_setting%i_seed%i_i%i.Rdata", x_model, amp1, setting1, seed1, 1)
+  
         if (file.exists(filename)) {
             load(filename)
             num = dim(fdp_power)[1]
@@ -45,18 +53,22 @@ for (arg in 1:N){
             )
             fdp_power[,6] = as.character(fdp_power[,6])
             fdp_power[,7] = as.character(fdp_power[,7])
-            results[((arg-1)*NN + iii -1)*m + 1:m, ] = fdp_power
+            results = rbind(results, fdp_power)
         }
+      }
     }
 }
+save_filename = sprintf("outputs/result_%s_c%.1f.Rdata", x_model, c0)
+save(results, file = save_filename)
+load(save_filename)
 
 results[is.na(results)] <- "NA"
 
 
 if(x_model == "ar"){
-  amp_multi = c(1.5,15,8,20)
+  amp_multi = c(1.5,15,6,20)
 } else{
-  amp_multi = c(2,6,10,20)
+  amp_multi = c(1.6,8,6,20)
 }
 
 
@@ -68,10 +80,11 @@ dat0 = results
 
 library(dplyr)
 
-dat = dat0 %>% group_by(amp, c, method, blackbox,include_h,knockoff_plus,setting_no) %>%
+dat = dat0 %>% group_by(amp, c, method, blackbox,include_h,knockoff_plus,setting_no, one_shot) %>%
           summarise(FDR = mean(fdp), Power = mean(power),
                     FDR_upper = upper_quan(fdp), power_upper = upper_quan(power),
-                    FDR_lower = lower_quan(fdp), power_lower = lower_quan(power)
+                    FDR_lower = lower_quan(fdp), power_lower = lower_quan(power),
+                    time = mean(time)
                     ) 
 dat$c = factor(dat$c, levels = c("NA", 0.1,0.2,0.3,0.4,0.5))
 dat$amp = dat$amp* amp_multi[dat$setting_no]
@@ -90,7 +103,7 @@ method_transfer = function(a){
 }
 
 dat$Blackbox = factor(unlist(lapply(dat$blackbox, blackbox_transfer)), levels = c("Lasso/glmnet", "Random Forest","Gradient Boosting"))
-dat$`Variable Selection Method` = factor(unlist(lapply(dat$method, method_transfer)), levels = c("CRT_seqstep+ (inexact)","CRT_seqstep+ (exact)", "knockoffs"))
+dat$Method = factor(unlist(lapply(dat$method, method_transfer)), levels = c("knockoffs", "CRT_seqstep+ (inexact)","CRT_seqstep+ (exact)"))
 
 
 #########################################
@@ -103,7 +116,8 @@ dat_toplot = subset(dat, (c == c0 | c == "NA")&
                           #(knockoff_plus == 1 | c == "NA")&
                           (knockoff_plus == 1)&
                           (setting_no %in% setting0)
-                    )
+                            )
+
 
 dat_toplot = subset(dat_toplot, (setting_no == 1 & Blackbox == "Lasso/glmnet") |
                         (setting_no == 3 & Blackbox == "Lasso/glmnet") |
@@ -112,18 +126,20 @@ dat_toplot = subset(dat_toplot, (setting_no == 1 & Blackbox == "Lasso/glmnet") |
                         (setting_no == 2 & Blackbox == "Gradient Boosting") |
                         (setting_no == 4 & Blackbox == "Gradient Boosting")
                       )
-#dat_toplot = dat
-library(tidyr)
+
+
+
 library(ggplot2)
+
 
 ## Colors
 library(scales)
 color_list = hue_pal()(4)
 
 p_FDR = ggplot(dat_toplot, aes(x=amp, y=FDR,
-                               group = interaction(`Variable Selection Method`, Blackbox),
+                               group = interaction(Method, Blackbox),
                                linetype = Blackbox,
-                               color = `Variable Selection Method`,
+                               color = Method,
                                shape = Blackbox
 )) +
   geom_line() + geom_point() + 
@@ -132,17 +148,16 @@ p_FDR = ggplot(dat_toplot, aes(x=amp, y=FDR,
         legend.margin=ggplot2::margin(c(0,0,0,0)),
         legend.key.width = grid::unit(2, "lines"))+
   geom_hline(aes(yintercept = 0.1)) +
-  scale_color_manual(values = color_list[c(1,3,2)]) +
-  scale_linetype_manual(values=c("dashed", "dotted", "solid")) + 
+  scale_color_manual(values = color_list[c(2,1,3)]) +
+  scale_linetype_manual(values=c("dashed", "solid", "dotted")) + 
   facet_grid(~ setting, scales = "free") + 
   xlab("") +
-  ylim(c(0,0.15)) + guides(colour = guide_legend(order = 1), 
-                             shape = guide_legend(order = 2))
+  ylim(c(0,0.15))
 
 p_power = ggplot(dat_toplot, aes(x=amp, y= Power,
-                                 group = interaction(`Variable Selection Method`, Blackbox),
+                                 group = interaction(Method, Blackbox),
                                  linetype = Blackbox,
-                                 color = `Variable Selection Method`,
+                                 color = Method,
                                  shape = Blackbox
 )) +
   geom_line() + geom_point() + 
@@ -150,11 +165,11 @@ p_power = ggplot(dat_toplot, aes(x=amp, y= Power,
   theme(legend.position="bottom", legend.box="vertical",
         legend.margin=ggplot2::margin(c(0,0,0,0)),
         legend.key.width = grid::unit(2, "lines"))+
-  scale_color_manual(values = color_list[c(1,3,2)]) +
-  scale_linetype_manual(values=c("dashed", "dotted", "solid")) + 
+  scale_color_manual(values = color_list[c(2,1,3)]) +
+  scale_linetype_manual(values=c("dashed", "solid", "dotted")) + 
   facet_grid(~ setting, scales = "free") + 
   xlab("Coefficient Amplitude") +
-  ylim(c(0,1))+ guides(colour = guide_legend(order = 1))
+  ylim(c(0,1))
 
 
 library(gridExtra)

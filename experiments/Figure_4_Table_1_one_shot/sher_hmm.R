@@ -11,17 +11,20 @@ power = function(selected, nonnulls) length(intersect(selected, nonnulls)) / len
 
 
 ptm <- proc.time()
-n = 200
-p = 100
+n = 300
+p = 300
 N = 5
 amplitude = res2
 setting_no = res1
+print(amplitude)
+print(setting_no)
+
 k = 20
 
-if(setting_no == 4){
-    n = 300
+if(setting_no == 4 | setting_no == 2){
+    n = 500
+    p = 200
 }
-
 
 set.seed(1)
 nonnulls = sort(sample(1:p,k))
@@ -57,9 +60,10 @@ for (iii in 1:N){
         }
         model = "linear"
         y = y_model(X[,nonnulls]) + rnorm(n) 
+        blackbox = "lasso"
     }
     if (setting_no == 2){
-        beta = beta*8
+        beta = beta*6
         y_model = function(X){
             p_h = floor(dim(X)[2]/2)
             X_trans = (X[,2*(1:p_h)-1] > 1.5) * (X[,2*(1:p_h)] > 1.5)
@@ -67,6 +71,7 @@ for (iii in 1:N){
         }
         model = "linear"
         y = y_model(X[,nonnulls]) + rnorm(n) 
+        blackbox = "gb"
     }
     if (setting_no == 3){
         beta = beta*10
@@ -77,6 +82,7 @@ for (iii in 1:N){
         z = y_model(X[,nonnulls])
         pr = 1/(1+exp(-z))         # pass through an inv-logit function
         y = (runif(n)<pr) + 0
+        blackbox = "lasso"
     }
     if (setting_no == 4){
         beta = beta*20
@@ -88,13 +94,14 @@ for (iii in 1:N){
         z = y_model(X[,nonnulls])
         pr = 1/(1+exp(-z))
         y = (runif(n)<pr) + 0
+        blackbox = "gb"
     }
     
     fdp_power = NULL
     for (one_shot_yes in c(TRUE, FALSE)){
         print(sprintf("One_shot_CRT? %s", one_shot_yes))
-        for (blackbox in c("lasso", "rf", "gb")){
-            #for (blackbox in c("lasso")){
+        #for (blackbox in c("lasso", "gb")){
+        #for (blackbox in c("lasso")){
             print(blackbox)
             for (method in c("inexact", "exact","knockoffs")){
                 print(sprintf("Method = %s", method))
@@ -117,7 +124,7 @@ for (iii in 1:N){
                                      one_shot = rep(one_shot_yes, length(fdps)))
                 fdp_power = rbind(fdp_power, results)
             }
-        }
+        
     }
     filename = sprintf("output_hmm/output_%i_%i.Rdata", seed, iii)
     save(seed,amplitude, setting_no, fdp_power, file = filename)

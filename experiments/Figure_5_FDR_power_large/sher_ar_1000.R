@@ -1,9 +1,7 @@
 args = commandArgs(TRUE)
-arg = as.numeric(args[1])
-res = (arg - 1)%%20 + 1
-res1 = (res - 1)%/%5 + 1
-res2 = (arg - 1)%%5 + 1
-seed = arg
+amplitude = as.numeric(args[1])
+setting_no = as.numeric(args[2])
+seed = as.numeric(args[3])
 #######################################################
 source("seqstep_CRT_functions.R")
 fdp = function(selected, nonnulls) length(setdiff(selected, nonnulls)) / max(1, length(selected))
@@ -11,21 +9,18 @@ power = function(selected, nonnulls) length(intersect(selected, nonnulls)) / len
 
 
 ptm <- proc.time()
-n = 300
-p = 300
+n = 1000
+p = 1000
 rho = 0.5 ##AR model
-k = 20 ## number of nonnulls
-N = 5
-
-amplitude = res2
-setting_no = res1
+k = 50 ## number of nonnulls
+N = 1
 
 print(amplitude)
 print(setting_no)
 
 if(setting_no == 4 | setting_no == 2){
-    n = 500
-    p = 200
+    n = 1200
+    p = 500
 }
 
 
@@ -59,7 +54,7 @@ for (iii in 1:N){
         blackbox = "gb"
     }
     if (setting_no == 3){
-        beta = beta*8
+        beta = beta*6
         y_model = function(X){
             y = X %*% beta
         }
@@ -85,12 +80,12 @@ for (iii in 1:N){
     }
     
     fdp_power = NULL
-    for (one_shot_yes in c(TRUE, FALSE)){
+    for (one_shot_yes in c(TRUE)){
         print(sprintf("One_shot_CRT? %s", one_shot_yes))
         #for (blackbox in c("lasso", "gb")){
         #for (blackbox in c("lasso")){
             print(blackbox)
-            for (method in c("inexact", "exact","knockoffs")){
+            for (method in c("inexact", "exact", "knockoffs")){
                 print(sprintf("Method = %s", method))
                 ##get selected sets
                 ptm <- proc.time()
@@ -113,6 +108,6 @@ for (iii in 1:N){
             }
         
     }
-    filename = sprintf("output_ar/output_%i_%i.Rdata", seed, iii)
-    save(seed,amplitude, setting_no, fdp_power, file = filename)
+    filename = sprintf("output_ar/output_amp%i_setting%i_seed%i_i%i.Rdata", amplitude, setting_no, seed, iii)
+    save(seed,amplitude, setting_no, fdp_power, iii, file = filename)
 }

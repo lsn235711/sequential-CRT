@@ -19,6 +19,7 @@ lower_quan = function(x){
   #return (mean(x))
 }
 
+
 save_filename = sprintf("outputs/result_%s_c%.1f.Rdata", x_model, c0)
 load(save_filename)
 
@@ -26,9 +27,9 @@ results[is.na(results)] <- "NA"
 
 
 if(x_model == "ar"){
-  amp_multi = c(1.5,15,8,20)
+  amp_multi = c(1.5,15,10,20)
 } else{
-  amp_multi = c(2,6,10,20)
+  amp_multi = c(2,8,10,20)
 }
 
 
@@ -42,8 +43,8 @@ library(dplyr)
 
 dat = dat0 %>% group_by(amp, c, method, blackbox,include_h,knockoff_plus,setting_no, one_shot) %>%
           summarise(FDR = mean(fdp), Power = mean(power),
-                    #FDR_upper = upper_quan(fdp), power_upper = upper_quan(power),
-                    #FDR_lower = lower_quan(fdp), power_lower = lower_quan(power),
+                    FDR_upper = upper_quan(fdp), power_upper = upper_quan(power),
+                    FDR_lower = lower_quan(fdp), power_lower = lower_quan(power),
                     time = mean(time)
                     ) 
 dat$c = factor(dat$c, levels = c("NA", 0.1,0.2,0.3,0.4,0.5))
@@ -81,7 +82,7 @@ dat_toplot = subset(dat, (c == c0 | c == "NA")&
 
 dat_toplot1 = dat_toplot %>% group_by(method, blackbox, one_shot, setting) %>%
                          summarise(average_time = mean(time))
-dat_toplot1
+
 
 
 

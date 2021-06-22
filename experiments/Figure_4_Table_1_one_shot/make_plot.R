@@ -1,15 +1,21 @@
 library(tidyverse)
 
+plot_FDR = T
+plot_power = T
+plot_band = F
 setting0 = c(1,2,3,4)
-x_model = "ar" #ar or hmm
+x_model = "hmm" #ar or hmm
 
 #knockoff_plus0 = 1
 include_h0 = FALSE
 c0 = 0.1
 
-N = 500
+#########################################
+############ Can change this ############
+#########################################
+N = 400
 NN = 5
-NNN = 500
+NNN = 100
 
 upper_quan = function(x){
   return (mean(x) + qnorm(0.95)*sd(x)/sqrt(NNN))
@@ -32,6 +38,8 @@ results = data.frame(fdp = numeric(0), power = numeric(0),
 results[,6] = as.character(results[,6])
 results[,7] = as.character(results[,7])
 
+track_numbers = rep(0,N)
+
 for (arg in 1:N){
     print(arg)
     for (iii in 1:NN){
@@ -51,18 +59,24 @@ for (arg in 1:N){
             fdp_power[,6] = as.character(fdp_power[,6])
             fdp_power[,7] = as.character(fdp_power[,7])
             results = rbind(results, fdp_power)
+            track_numbers[arg] = iii
         }
     }
 }
+save_filename = sprintf("outputs/result_%s_c%.1f.Rdata", x_model, c0)
+save(results, file = save_filename)
+load(save_filename)
 
 results[is.na(results)] <- "NA"
 
 
 if(x_model == "ar"){
-  amp_multi = c(1.5,15,10,20)
+  amp_multi = c(1.5,15,8,20)
 } else{
-  amp_multi = c(2,8,10,20)
+  amp_multi = c(2,6,10,20)
 }
+
+
 
 k_names = c(20,20,20,20)
 setting_names = c("Linear Gaussian Response", "Non-linear Gaussian Response", "Logistic Binary Response","Non-Linear Binary Response")
@@ -157,7 +171,7 @@ p_FDR = ggplot(dat_toplot, aes(x=amp, y=FDR,
         legend.key.width = grid::unit(2, "lines"))+
   geom_hline(aes(yintercept = 0.1)) +
   scale_color_manual(values = color_list[c(1,4,2)]) +
-  scale_linetype_manual(values=c("dashed", "dotted", "solid")) + 
+  scale_linetype_manual(values=c("dashed", "solid", "dotted")) + 
   facet_grid(~ setting, scales = "free") + 
   xlab("") +
   ylim(c(0,0.15))
@@ -174,7 +188,7 @@ p_power = ggplot(dat_toplot, aes(x=amp, y= Power,
         legend.margin=ggplot2::margin(c(0,0,0,0)),
         legend.key.width = grid::unit(2, "lines"))+
   scale_color_manual(values = color_list[c(1,4,2)]) +
-  scale_linetype_manual(values=c("dashed", "dotted", "solid")) + 
+  scale_linetype_manual(values=c("dashed", "solid", "dotted")) + 
   facet_grid(~ setting, scales = "free") + 
   xlab("Coefficient Amplitude") +
   ylim(c(0,1))
