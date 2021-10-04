@@ -1,5 +1,5 @@
 ---
-title: "Variable Selection with CRT and Selective SeqStep+ Examples"
+title: "The Sequential CRT Examples"
 output:
   html_document:
     df_print: paged
@@ -7,7 +7,7 @@ output:
 
 We demonstrate the usage of the functions here. 
 ```{r echo=T, results='hide'}
-source("CRT_seqstep/seqstep_CRT_functions.R")
+source("../sequential_CRT/sequential_CRT_functions.R")
 ```
 
 ### Generate Data
@@ -32,7 +32,7 @@ y = y_model(X[,nonnulls]) + rnorm(n)
 ```
 
 ### Run the procedures
-We run the variable selection procedures with CRT and Selective SeqStep+ (exact version and inexact version), and knockoffs as a comparison.
+We run the the sequential CRT (split version and symmetric statistics version), and knockoffs as a comparison.
 ```{r echo=T, results='hide'}
 selected_sets = selected_set(X, y, X_model = "AR", rho = 0.5, Sigma = Sigma, model = "linear", blackbox = "lasso", c = 0.1, include_h = FALSE, knockoff_pluss = 1)
 ```

@@ -5,7 +5,7 @@ res1 = (res - 1)%/%5 + 1
 res2 = (arg - 1)%%5 + 1
 seed = arg
 #######################################################
-source("seqstep_CRT_functions.R")
+source("../../sequential_CRT/sequential_CRT_functions.R")
 fdp = function(selected, nonnulls) length(setdiff(selected, nonnulls)) / max(1, length(selected))
 power = function(selected, nonnulls) length(intersect(selected, nonnulls)) / length(nonnulls)
 
@@ -90,13 +90,13 @@ for (iii in 1:N){
         #for (blackbox in c("lasso", "gb")){
         #for (blackbox in c("lasso")){
             print(blackbox)
-            for (method in c("inexact", "exact","knockoffs")){
+            for (method in c("sym_stats", "split","knockoffs")){
                 print(sprintf("Method = %s", method))
                 ##get selected sets
                 ptm <- proc.time()
                 selected_sets = selected_set(X, y, Sigma = Sigma, rho = 0.5, model = model, blackbox = blackbox, one_shot = one_shot_yes,
-                                             do_CRT_seqstep_inexact = (method == "inexact"),
-                                             do_CRT_seqstep_exact = (method == "exact"),
+                                             do_sequential_CRT_sym_stats = (method == "sym_stats"),
+                                             do_sequential_CRT_split = (method == "split"),
                                              do_knockoff = (method == "knockoffs"),
                 )
                 time_elapsed = (proc.time() - ptm)[3]

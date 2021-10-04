@@ -102,13 +102,13 @@ blackbox_transfer = function(a){
 }
 
 method_transfer = function(a){
-  if (a == "CRT_seqstep_exact") {return ("CRT_seqstep+ (exact)")}
-  else if (a == "CRT_seqstep_inexact") {return ("CRT_seqstep+ (inexact)")}
+  if (a == "sequential_CRT_exact") {return ("sequential CRT (split)")}
+  else if (a == "sequential_CRT_inexact") {return ("sequential CRT (symmetric statistics)")}
   else if (a == "knockoffs") {return ("knockoffs")}
 }
 
 dat$Blackbox = factor(unlist(lapply(dat$blackbox, blackbox_transfer)), levels = c("Lasso/glmnet", "Random Forest","Gradient Boosting"))
-dat$Method = factor(unlist(lapply(dat$method, method_transfer)), levels = c("knockoffs", "CRT_seqstep+ (inexact)","CRT_seqstep+ (exact)"))
+dat$Method = factor(unlist(lapply(dat$method, method_transfer)), levels = c("knockoffs", "sequential CRT (symmetric statistics)","sequential CRT (split)"))
 
 
 #########################################
@@ -121,15 +121,15 @@ dat_toplot = subset(dat, (c == c0 | c == "NA")&
                           #(knockoff_plus == 1 | c == "NA")&
                           (knockoff_plus == 1)&
                           (setting_no %in% setting0)&
-                         (method == "CRT_seqstep_inexact" | 
+                         (method == "sequential_CRT_sym_stats" | 
                             (method == "knockoffs" & one_shot == TRUE)
                             )
                     )
 combine_method_name = function(a,b){
-  if(a == "CRT_seqstep_inexact" & b == TRUE){
-    return("one-shot CRT_seqstep+")
-  } else if(a == "CRT_seqstep_inexact" & b == FALSE){
-    return("CRT_seqstep+")
+  if(a == "sequential_CRT_sym_stats" & b == TRUE){
+    return("sequential CRT (one−shot CRT)")
+  } else if(a == "sequential_CRT_sym_stats" & b == FALSE){
+    return("sequential CRT (original CRT)")
   } else{
     return("knockoffs")
   }
@@ -140,7 +140,7 @@ combine_method_name_vec = function(a,b){
 }
 
 dat_toplot = dat_toplot %>% mutate(`Variable Selection Method` = combine_method_name_vec(method, one_shot) )
-dat_toplot["Variable Selection Method"] = factor(unlist(dat_toplot["Variable Selection Method"]), levels = c("one-shot CRT_seqstep+", "CRT_seqstep+", "knockoffs"))
+dat_toplot["Variable Selection Method"] = factor(unlist(dat_toplot["Variable Selection Method"]), levels = c("sequential CRT (one−shot CRT)", "sequential CRT (original CRT)", "knockoffs"))
 
 dat_toplot = subset(dat_toplot, (setting_no == 1 & Blackbox == "Lasso/glmnet") |
                         (setting_no == 3 & Blackbox == "Lasso/glmnet") |

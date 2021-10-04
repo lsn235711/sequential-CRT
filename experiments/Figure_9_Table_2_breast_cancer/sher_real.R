@@ -193,7 +193,7 @@ Knockoff_Result$selected
 
 
 
-######## My method #########
+######## sequential CRT #########
 selected_sets = selected_set(X_pos, Y_binary, Sigma = Sigma_est, mu = rep(0, p), X_model = "gaussian", model = "logistic", blackbox = "lasso",
                             include_hs = FALSE,
                             knockoff_pluss = 1,
@@ -207,7 +207,7 @@ set_d0 = RNA_data[1,d0CRT_results$select_set]
 set_d1 = RNA_data[1,dICRT_results$select_set]
 set_hrt = RNA_data[1,HRT_results$select_set]
 set_knockoffs = RNA_data[1,Knockoff_Result$selected]
-set_crt_seqstep = RNA_data[1,selected_sets[[1]][[1]]]
+set_sequential_CRT = RNA_data[1,selected_sets[[1]][[1]]]
 
 filename = sprintf("output_real/output_%i.Rdata", seed)
-save(seed,set_d0, set_d1, set_hrt,set_knockoffs,set_crt_seqstep, file = filename)
+save(seed,set_d0, set_d1, set_hrt,set_knockoffs, set_sequential_CRT, file = filename)

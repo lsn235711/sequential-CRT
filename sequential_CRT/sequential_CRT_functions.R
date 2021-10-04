@@ -1,6 +1,5 @@
 ################################################################
-## These functions run the variable selection procedure 
-##    with CRT and Selective SeqStep+
+## These functions run the sequential CRT
 ################################################################
 library(knockoff)
 library(glmnet)
@@ -76,7 +75,7 @@ feature_importance_knockoffs = function(X, X_k, y, blackbox, model){
 }
 
 ## Obtain p-values from CRT and the statistics for ordering when X is from an AR(1) model
-##        The statistics are computed as in the inexact method
+##        The statistics are computed as in the symmetric statistics method
 ## Inputs: 
 ##    X: matrix of predictors
 ##    y: vector of response variable
@@ -89,7 +88,7 @@ feature_importance_knockoffs = function(X, X_k, y, blackbox, model){
 ## Output:
 ##    A matrix, whose first column consists of the p-values, and the second column consists
 ##        of the statistics   
-CRT_seqstep_AR = function(X, y, rho, sigma2, B, blackbox, model, one_shot = TRUE){
+sequential_CRT_AR = function(X, y, rho, sigma2, B, blackbox, model, one_shot = TRUE){
     n = dim(X)[1]
     p = dim(X)[2]
     ps <- rep(1,p)
@@ -146,7 +145,7 @@ CRT_seqstep_AR = function(X, y, rho, sigma2, B, blackbox, model, one_shot = TRUE
 }
 
 ## Obtain p-values from CRT and the statistics for ordering when X is from a gaussian model
-##        The statistics are computed as in the inexact method
+##        The statistics are computed as in the symmetric statistics method
 ## Inputs: 
 ##    X: matrix of predictors
 ##    y: vector of response variable
@@ -159,7 +158,7 @@ CRT_seqstep_AR = function(X, y, rho, sigma2, B, blackbox, model, one_shot = TRUE
 ## Output:
 ##    A matrix, whose first column consists of the p-values, and the second column consists
 ##        of the statistics  
-CRT_seqstep_gaussian = function(X, y, mu, Sigma, B, blackbox, model, one_shot = TRUE){
+sequential_CRT_gaussian = function(X, y, mu, Sigma, B, blackbox, model, one_shot = TRUE){
     n = dim(X)[1]
     p = dim(X)[2]
     ps <- rep(1,p)
@@ -246,7 +245,7 @@ sample_HMM_from_posterior = function(posterior, B){
 }
 
 ## Obtain p-values from CRT and the statistics for ordering when X is from an HMM model
-##        The statistics are computed as in the inexact method
+##        The statistics are computed as in the symmetric statistics method
 ## Inputs: 
 ##    X: matrix of predictors
 ##    y: vector of response variable
@@ -258,7 +257,7 @@ sample_HMM_from_posterior = function(posterior, B){
 ## Output:
 ##    A matrix, whose first column consists of the p-values, and the second column consists
 ##        of the statistics  
-CRT_seqstep_HMM = function(X, y, hmm1, B, blackbox, model, one_shot = TRUE){
+sequential_CRT_HMM = function(X, y, hmm1, B, blackbox, model, one_shot = TRUE){
     n = dim(X)[1]
     p = dim(X)[2]
     ps <- rep(1,p)
@@ -301,7 +300,7 @@ CRT_seqstep_HMM = function(X, y, hmm1, B, blackbox, model, one_shot = TRUE){
 
 
 
-## Report discoveries from CRT_SeqStep+
+## Report discoveries from the sequential CRT
 ## Inputs: 
 ##    X: matrix of predictors
 ##    y: vector of response variable
@@ -312,8 +311,8 @@ CRT_seqstep_HMM = function(X, y, hmm1, B, blackbox, model, one_shot = TRUE){
 ##    blackbox: "lasso" is glmnet; "rf" is random forest; "gb" is gradient boosting
 ##    model: "logistic" when y is binary; "gaussian" when y is continuous
 ##    B: number of randomizations in CRT
-##    do_CRT_seqstep_inexact: whether to run the inexact version of CRT_SeqStep+
-##    do_CRT_seqstep_exact: whether to run the exact version of CRT_SeqStep+
+##    do_sequential_CRT_sym_stats: whether to run the symmetric statistics version of the sequential CRT
+##    do_sequential_CRT_split: whether to run the split version of the sequential CRT
 ##    do_knockoff: whether to run knockoffs as a comparison
 ##    q: FDR threshold q
 ##    X_model: distribution of X -- "AR" stands for AR(1) model; "gaussian" stands for general
@@ -328,7 +327,7 @@ CRT_seqstep_HMM = function(X, y, hmm1, B, blackbox, model, one_shot = TRUE){
 ##              c: vector of thresholds c
 ##              include_h: vector of include_h (TRUE/FALSE)
 ##              knockoff_plus: vector of knockoff_plus (0/1)
-##              method: vector of methods considered ("CRT_seqstep_inexact"/"CRT_seqstep_exact"/"knockoffs")
+##              method: vector of methods considered ("sequential_CRT_sym_stats"/"sequential_CRT_split"/"knockoffs")
 ##              blackbox: vector of blackboxs considered ("lasso"/"gb"/"rf")
 selected_set = function(X, y, cs = 0.1*(1:5), one_shot = TRUE,
             include_hs = c(FALSE,TRUE),
@@ -336,8 +335,8 @@ selected_set = function(X, y, cs = 0.1*(1:5), one_shot = TRUE,
             model = "linear",
             blackbox = "lasso",
             B = 19,
-            do_CRT_seqstep_inexact = TRUE,
-            do_CRT_seqstep_exact = TRUE,
+            do_sequential_CRT_sym_stats = TRUE,
+            do_sequential_CRT_split = TRUE,
             do_knockoff = TRUE,
             q = 0.1,
             X_model = "AR", rho = NULL, Sigma = NULL, mu = NULL,
@@ -354,14 +353,14 @@ selected_set = function(X, y, cs = 0.1*(1:5), one_shot = TRUE,
     n = dim(X)[1]
     p = dim(X)[2]
     
-    ################### CRT + seqstep inexact ###########
-    if (do_CRT_seqstep_inexact){
+    ################### the sequential CRT symmetric statistics ###########
+    if (do_sequential_CRT_sym_stats){
         if(X_model == "AR"){
-            pvalue_W = CRT_seqstep_AR(X, y, rho, Sigma[1,1], B, blackbox, model, one_shot)
+            pvalue_W = sequential_CRT_AR(X, y, rho, Sigma[1,1], B, blackbox, model, one_shot)
         } else if (X_model == "HMM") {
-            pvalue_W = CRT_seqstep_HMM(X, y, hmm1, B, blackbox, model, one_shot)
+            pvalue_W = sequential_CRT_HMM(X, y, hmm1, B, blackbox, model, one_shot)
         } else if (X_model == "gaussian") {
-            pvalue_W = CRT_seqstep_gaussian(X, y, mu, Sigma, B, blackbox, model, one_shot)
+            pvalue_W = sequential_CRT_gaussian(X, y, mu, Sigma, B, blackbox, model, one_shot)
         }
         
         for (c in cs){
@@ -387,15 +386,15 @@ selected_set = function(X, y, cs = 0.1*(1:5), one_shot = TRUE,
                     c_list = c(c_list,c)
                     include_h_list = c(include_h_list, include_h)
                     knockoff_plus_list = c(knockoff_plus_list,knockoff_plus)
-                    method_list = c(method_list,"CRT_seqstep_inexact")
+                    method_list = c(method_list,"sequential_CRT_sym_stats")
                     list_i = list_i + 1
                 }
             }
         }
     }
     
-    ################### CRT + seqstep exact ###########
-    if (do_CRT_seqstep_exact){
+    ################### the sequential CRT split ###########
+    if (do_sequential_CRT_split){
         pvalue_proportion = 0.5
         W_proportion = n - pvalue_proportion
         n_p = floor(n*pvalue_proportion)
@@ -407,11 +406,11 @@ selected_set = function(X, y, cs = 0.1*(1:5), one_shot = TRUE,
         y_w = y[-p_value_indices]
         
         if(X_model == "AR"){
-            pvalue_W = CRT_seqstep_AR(X_p, y_p, rho, Sigma[1,1], B, blackbox, model, one_shot)
+            pvalue_W = sequential_CRT_AR(X_p, y_p, rho, Sigma[1,1], B, blackbox, model, one_shot)
         } else if (X_model == "HMM") {
-            pvalue_W = CRT_seqstep_HMM(X_p, y_p, hmm1, B, blackbox, model, one_shot)
+            pvalue_W = sequential_CRT_HMM(X_p, y_p, hmm1, B, blackbox, model, one_shot)
         } else if (X_model == "gaussian") {
-            pvalue_W = CRT_seqstep_gaussian(X_p, y_p, mu, Sigma, B, blackbox, model, one_shot)
+            pvalue_W = sequential_CRT_gaussian(X_p, y_p, mu, Sigma, B, blackbox, model, one_shot)
         }
         
         for (c in cs){
@@ -436,7 +435,7 @@ selected_set = function(X, y, cs = 0.1*(1:5), one_shot = TRUE,
                     c_list = c(c_list,c)
                     include_h_list = c(include_h_list, include_h)
                     knockoff_plus_list = c(knockoff_plus_list,knockoff_plus)
-                    method_list = c(method_list,"CRT_seqstep_exact")
+                    method_list = c(method_list,"sequential_CRT_split")
                     list_i = list_i + 1
                 }
             }

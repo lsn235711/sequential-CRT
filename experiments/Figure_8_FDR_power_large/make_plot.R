@@ -97,13 +97,13 @@ blackbox_transfer = function(a){
 }
 
 method_transfer = function(a){
-  if (a == "CRT_seqstep_exact") {return ("CRT_seqstep+ (exact)")}
-  else if (a == "CRT_seqstep_inexact") {return ("CRT_seqstep+ (inexact)")}
+  if (a == "sequential_CRT_split") {return ("CRT_seqstep+ (exact)")}
+  else if (a == "sequential_CRT_sym_stats") {return ("sequential CRT (symmetric statistic)")}
   else if (a == "knockoffs") {return ("knockoffs")}
 }
 
 dat$Blackbox = factor(unlist(lapply(dat$blackbox, blackbox_transfer)), levels = c("Lasso/glmnet", "Random Forest","Gradient Boosting"))
-dat$Method = factor(unlist(lapply(dat$method, method_transfer)), levels = c("knockoffs", "CRT_seqstep+ (inexact)","CRT_seqstep+ (exact)"))
+dat$Method = factor(unlist(lapply(dat$method, method_transfer)), levels = c("knockoffs", "sequential CRT (symmetric statistic)","sequential CRT (split)"))
 
 
 #########################################
