@@ -1,6 +1,6 @@
 # The Sequential CRT
-This repository contains the code to reproduce the numerical results in our paper: **Deploying the Conditional Randomization Test
-in High Multiplicity Problems**.
+This repository contains the code to reproduce the numerical results in our paper: <a href="https://arxiv.org/abs/2110.02422">Deploying the Conditional Randomization Test
+in High Multiplicity Problems</a>.
 
 ## Folders
 * sequential_CRT/: contains the main functions that implement the sequential CRT proposed in our paper. 
