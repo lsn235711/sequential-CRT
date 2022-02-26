@@ -7,7 +7,7 @@ for (arg in 1:N){
 
     if (file.exists(filename)) {
         load(filename)
-        Method = c(Method, "d0CRT", "d1CRT", "HRT", "knockoffs", "sequential CRT")
+        Method = c(Method, "d0CRT", "dICRT", "HRT", "knockoffs", "sequential CRT")
         dic = c(length(set_d0), length(set_d1), length(set_hrt), length(set_knockoffs), length(set_sequential_CRT))
         num_disco = c(num_disco, dic)
     }
@@ -15,7 +15,7 @@ for (arg in 1:N){
 }
 
 dat_toplot = data.frame(Method = Method, num_disco = num_disco)
-dat_toplot$Method = factor(Method, levels = c("d0CRT", "d1CRT", "HRT", "knockoffs", "sequential CRT"))
+dat_toplot$Method = factor(Method, levels = c("d0CRT", "dICRT", "HRT", "knockoffs", "sequential CRT"))
 p1 = ggplot(dat_toplot, aes(x=Method, y=num_disco, fill= Method, color = Method)) +
     geom_boxplot(alpha = 0.3) + 
     ylab("Number of Discoveries") +
